@@ -6,8 +6,17 @@ Authentication uses Google Identity Services directly. See `docs/google-auth-set
 
 ## Games
 
-- `tetris/` - playable Tetris with login, automatic score saving, player stats, and a top-ten leaderboard.
-- `neon-shatter/` - neon brick breaker with escalating sectors, combo scoring, touch controls, accounts, and leaderboards.
+### Tetris
+
+![Tetris — full-stack arcade game](tetris/frontend/public/social/social-preview.png)
+
+Playable Tetris with login, automatic score saving, player stats, and a top-ten leaderboard.
+
+### Neon Shatter
+
+![Neon Shatter — full-stack neon brick breaker](neon-shatter/frontend/public/social/social-preview.png)
+
+Neon brick breaker with escalating sectors, combo scoring, touch controls, accounts, and leaderboards.
 
 ## Tetris Development
 
