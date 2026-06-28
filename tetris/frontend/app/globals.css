@@ -328,15 +328,25 @@ h1 {
 }
 
 .google-signin {
+  position: relative;
   display: grid;
-  min-height: 44px;
+  width: min(100%, 320px);
+  min-height: 46px;
+  padding: 1px;
+  border-radius: 999px;
+  background: linear-gradient(110deg, rgba(34, 211, 238, 0.82), rgba(79, 140, 255, 0.42), rgba(167, 139, 250, 0.72));
+  box-shadow: 0 0 24px rgba(34, 211, 238, 0.12), inset 0 1px rgba(255, 255, 255, 0.22);
+  justify-self: center;
   place-items: center;
   overflow: hidden;
-  transition: opacity 160ms ease;
+  transition: box-shadow 160ms ease, opacity 160ms ease, transform 160ms ease;
 }
 
 .google-signin.disabled { pointer-events: none; opacity: 0.55; }
-.google-signin > div { max-width: 100%; }
+.google-signin:not(.disabled):hover { box-shadow: 0 0 30px rgba(34, 211, 238, 0.22), 0 0 12px rgba(167, 139, 250, 0.1); transform: translateY(-1px); }
+.google-signin:focus-within { box-shadow: 0 0 0 2px var(--focus), 0 0 28px rgba(34, 211, 238, 0.2); }
+.google-signin-button { display: grid; width: 100%; min-height: 44px; border-radius: inherit; background: #090d15; place-items: center; overflow: hidden; }
+.google-signin-button > div { max-width: 100%; }
 
 .google-config-note,
 .auth-progress {

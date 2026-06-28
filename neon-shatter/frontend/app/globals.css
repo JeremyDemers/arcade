@@ -161,9 +161,12 @@ h1 span { color: var(--cyan); text-shadow: 0 0 24px rgba(68, 237, 255, .42); }
 .auth-block p { margin: 0 0 4px; }
 .full { width: 100%; }
 
-.google-signin { display: grid; min-height: 44px; place-items: center; overflow: hidden; transition: opacity 160ms ease; }
+.google-signin { position: relative; display: grid; width: min(100%, 320px); min-height: 46px; padding: 1px; border-radius: 999px; background: linear-gradient(110deg, rgba(68, 237, 255, .88), rgba(157, 92, 255, .55), rgba(255, 76, 196, .82)); box-shadow: 0 0 25px rgba(68, 237, 255, .13), 0 0 18px rgba(255, 76, 196, .06), inset 0 1px rgba(255, 255, 255, .22); justify-self: center; place-items: center; overflow: hidden; transition: box-shadow 160ms ease, opacity 160ms ease, transform 160ms ease; }
 .google-signin.disabled { pointer-events: none; opacity: .55; }
-.google-signin > div { max-width: 100%; }
+.google-signin:not(.disabled):hover { box-shadow: 0 0 30px rgba(68, 237, 255, .22), 0 0 23px rgba(255, 76, 196, .13); transform: translateY(-1px); }
+.google-signin:focus-within { box-shadow: 0 0 0 2px var(--cyan), 0 0 30px rgba(68, 237, 255, .22); }
+.google-signin-button { display: grid; width: 100%; min-height: 44px; border-radius: inherit; background: #080c15; place-items: center; overflow: hidden; }
+.google-signin-button > div { max-width: 100%; }
 .google-config-note, .auth-progress { margin: 0; color: var(--muted); font-size: .73rem; line-height: 1.45; text-align: center; }
 .google-config-note { color: #ffc56e; }
 .auth-block .privacy-copy { margin: 1px 0 0; color: #71839a; font-size: .68rem; line-height: 1.5; text-align: center; }

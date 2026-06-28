@@ -18,34 +18,48 @@ Playable Tetris with login, automatic score saving, player stats, and a top-ten 
 
 Neon brick breaker with escalating sectors, combo scoring, touch controls, accounts, and leaderboards.
 
-## Tetris Development
+## Local Development
 
-Start the backend:
-
-```bash
-cd tetris/backend
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-export GOOGLE_CLIENT_ID=123456789-example.apps.googleusercontent.com
-export ARCADE_SECRET=choose-a-long-random-value
-uvicorn app.main:app --reload --port 8000
-```
-
-Start the frontend in a second terminal:
+The root launcher starts both backends and both frontends in one terminal. On the
+first run, create a shared local environment file:
 
 ```bash
-cd tetris/frontend
-npm install
-npm run dev
+cp .env.example .env.local
 ```
 
-Then open the Next.js app at `http://localhost:3000`.
+Edit `.env.local` with the Google Web Client ID used by the frontend and a newly
+generated `ARCADE_SECRET`. Keep quotes around secret values, especially when they
+contain characters such as `!`. You can generate a fresh secret with:
 
-The frontend reads `NEXT_PUBLIC_GOOGLE_CLIENT_ID` and `NEXT_PUBLIC_API_BASE_URL`; the API URL defaults to `http://localhost:8000`.
-For production, set a strong `ARCADE_SECRET` on the backend so auth tokens are signed with a private value.
+```bash
+python3 -c 'import secrets; print(secrets.token_urlsafe(48))'
+```
 
-## Neon Shatter Development
+Then launch the complete arcade:
 
-Neon Shatter runs alongside Tetris on ports `3001` and `8001`. See
-`neon-shatter/README.md` for setup, environment variables, and controls.
+```bash
+./start-arcade.sh
+```
+
+The script creates missing Python virtual environments or frontend installs,
+loads the shared environment once, and starts:
+
+- Tetris frontend: `http://localhost:3000`
+- Tetris backend: `http://localhost:8000`
+- Neon Shatter frontend: `http://localhost:3001`
+- Neon Shatter backend: `http://localhost:8001`
+
+Press `Ctrl+C` to stop all four services. To use a different environment file,
+set `ARCADE_ENV_FILE` to its path before launching.
+
+The launcher passes the same Google client ID to every service, preventing
+frontend/backend token-audience mismatches. The root `.env.local`, databases,
+virtual environments, and frontend build output are ignored by Git.
+
+## Per-game Documentation
+
+See `tetris/README.md`, `neon-shatter/README.md`, and
+`docs/google-auth-setup.md` for manual setup, environment variables, controls,
+and production-domain configuration.
+
+-Author: Jeremy Demers

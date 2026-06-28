@@ -25,8 +25,11 @@ type GoogleSignInProps = {
 };
 
 export function GoogleSignIn({ disabled = false, onCredential }: GoogleSignInProps) {
+  const wrapperRef = useRef<HTMLDivElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const callbackRef = useRef(onCredential);
+  const initializedRef = useRef(false);
+  const renderedWidthRef = useRef(0);
   const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ?? "";
 
   useEffect(() => {
@@ -35,26 +38,42 @@ export function GoogleSignIn({ disabled = false, onCredential }: GoogleSignInPro
 
   const renderButton = useCallback(() => {
     if (!clientId || !containerRef.current || !window.google) return;
+
+    const width = Math.floor(containerRef.current.getBoundingClientRect().width);
+    if (width < 1 || width === renderedWidthRef.current) return;
+
     containerRef.current.replaceChildren();
-    window.google.accounts.id.initialize({
-      client_id: clientId,
-      callback: (response) => {
-        if (response.credential) void callbackRef.current(response.credential);
-      },
-    });
+    if (!initializedRef.current) {
+      window.google.accounts.id.initialize({
+        client_id: clientId,
+        callback: (response) => {
+          if (response.credential) void callbackRef.current(response.credential);
+        },
+      });
+      initializedRef.current = true;
+    }
+
     window.google.accounts.id.renderButton(containerRef.current, {
       type: "standard",
-      theme: "outline",
+      theme: "filled_black",
       size: "large",
-      shape: "rectangular",
-      text: "signin_with",
+      shape: "pill",
+      text: "continue_with",
       logo_alignment: "left",
-      width: 240,
+      width,
     });
+    renderedWidthRef.current = width;
   }, [clientId]);
 
   useEffect(() => {
     if (window.google) renderButton();
+
+    const wrapper = wrapperRef.current;
+    if (!wrapper) return;
+
+    const resizeObserver = new ResizeObserver(renderButton);
+    resizeObserver.observe(wrapper);
+    return () => resizeObserver.disconnect();
   }, [renderButton]);
 
   if (!clientId) {
@@ -62,9 +81,9 @@ export function GoogleSignIn({ disabled = false, onCredential }: GoogleSignInPro
   }
 
   return (
-    <div className={`google-signin${disabled ? " disabled" : ""}`} aria-busy={disabled}>
+    <div ref={wrapperRef} className={`google-signin${disabled ? " disabled" : ""}`} aria-busy={disabled}>
       <Script src="https://accounts.google.com/gsi/client" strategy="afterInteractive" onLoad={renderButton} />
-      <div ref={containerRef} />
+      <div ref={containerRef} className="google-signin-button" />
     </div>
   );
 }
