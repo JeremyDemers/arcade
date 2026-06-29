@@ -23,8 +23,8 @@ jobs:
       run:
         working-directory: ${{ matrix.directory }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with:
           node-version: 22
           cache: npm
@@ -37,8 +37,8 @@ jobs:
     name: Serverless API
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.14"
           cache: pip
@@ -61,3 +61,42 @@ jobs:
           terraform -chdir=backend/serverless/terraform fmt -check
           terraform -chdir=backend/serverless/terraform init -backend=false -input=false
           terraform -chdir=backend/serverless/terraform validate
+
+  deploy-api:
+    name: Deploy production API
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [frontend, serverless-api]
+    runs-on: ubuntu-latest
+    concurrency:
+      group: arcade-production
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.14"
+
+      - name: Build Lambda package
+        run: ./backend/serverless/build-lambda.sh
+
+      - name: Configure temporary AWS credentials
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          role-session-name: arcade-${{ github.run_id }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Update Lambda code
+        run: |
+          aws lambda update-function-code \
+            --function-name "${{ vars.ARCADE_LAMBDA_NAME }}" \
+            --zip-file fileb://backend/serverless/dist/arcade-api.zip \
+            --no-cli-pager
+          aws lambda wait function-updated-v2 \
+            --function-name "${{ vars.ARCADE_LAMBDA_NAME }}"
+
+      - name: Verify production API
+        run: curl --fail-with-body --silent --show-error "${{ vars.ARCADE_API_URL }}/health"
