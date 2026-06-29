@@ -14,7 +14,7 @@ Lambda + FastAPI + Mangum
 DynamoDB on-demand table
 ```
 
-Google Identity Services returns an ID token to the browser. The API verifies that token against the configured Web Client ID, stores or updates the player profile, and returns a signed Arcade session token. The signing secret is read from an existing SSM SecureString and is never passed through Terraform state.
+Google Identity Services returns an ID token to the browser. The API verifies that token against the configured Web Client ID, stores or updates the player profile, and returns a signed Arcade session token. The signing secret is read from an existing Secrets Manager secret and is never passed through Terraform state.
 
 The DynamoDB table uses these access patterns:
 
@@ -38,10 +38,11 @@ The repository layer expects DynamoDB. The included unit tests cover token handl
 Create the signing secret once. Do not save its value in a `.tfvars` file:
 
 ```bash
-aws ssm put-parameter \
-  --name /arcade/prod/token-signing-secret \
-  --type SecureString \
-  --value "$(openssl rand -hex 48)"
+aws secretsmanager create-secret \
+  --name arcade/prod/token-signing-secret \
+  --secret-string "$(openssl rand -hex 48)" \
+  --query ARN \
+  --output text
 ```
 
 An encrypted, versioned S3 bucket for Terraform state must also exist before deployment.
@@ -60,6 +61,7 @@ Export the public Google Web Client ID and state bucket name, then review and ap
 
 ```bash
 export TF_VAR_google_client_id="YOUR_CLIENT_ID.apps.googleusercontent.com"
+export TF_VAR_arcade_secret_arn="THE_SECRET_ARN_RETURNED_ABOVE"
 export ARCADE_TERRAFORM_STATE_BUCKET="YOUR_STATE_BUCKET"
 ./backend/serverless/deploy.sh prod
 ```

@@ -16,17 +16,17 @@ TOKEN_TTL_SECONDS = 60 * 60 * 24 * 14
 
 @lru_cache(maxsize=1)
 def signing_secret() -> str:
-    """Load the JWT signing secret locally or from SSM in AWS."""
+    """Load the JWT signing secret locally or from Secrets Manager in AWS."""
     local_secret = os.getenv("ARCADE_SECRET", "").strip()
     if local_secret:
         return local_secret
 
-    parameter_name = os.getenv("ARCADE_SECRET_PARAMETER_NAME", "").strip()
-    if not parameter_name:
-        raise RuntimeError("ARCADE_SECRET or ARCADE_SECRET_PARAMETER_NAME must be configured")
+    secret_arn = os.getenv("ARCADE_SECRET_ARN", "").strip()
+    if not secret_arn:
+        raise RuntimeError("ARCADE_SECRET or ARCADE_SECRET_ARN must be configured")
 
-    response = boto3.client("ssm").get_parameter(Name=parameter_name, WithDecryption=True)
-    secret = response["Parameter"]["Value"].strip()
+    response = boto3.client("secretsmanager").get_secret_value(SecretId=secret_arn)
+    secret = response["SecretString"].strip()
     if len(secret) < 32:
         raise RuntimeError("The configured Arcade signing secret is too short")
     return secret

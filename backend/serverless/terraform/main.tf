@@ -1,6 +1,3 @@
-data "aws_caller_identity" "current" {}
-data "aws_partition" "current" {}
-
 locals {
   name_prefix = "${var.project_name}-${var.environment}"
   common_tags = {
@@ -8,7 +5,6 @@ locals {
     Environment = var.environment
     ManagedBy   = "terraform"
   }
-  signing_secret_arn = "arn:${data.aws_partition.current.partition}:ssm:${var.aws_region}:${data.aws_caller_identity.current.account_id}:parameter${var.arcade_secret_parameter_name}"
 }
 
 resource "aws_dynamodb_table" "arcade" {
@@ -109,8 +105,8 @@ resource "aws_iam_role_policy" "lambda" {
       {
         Sid      = "ReadSigningSecret"
         Effect   = "Allow"
-        Action   = "ssm:GetParameter"
-        Resource = local.signing_secret_arn
+        Action   = "secretsmanager:GetSecretValue"
+        Resource = var.arcade_secret_arn
       },
     ]
   })
@@ -136,10 +132,10 @@ resource "aws_lambda_function" "api" {
 
   environment {
     variables = {
-      ARCADE_ALLOWED_ORIGINS       = join(",", var.allowed_origins)
-      ARCADE_SECRET_PARAMETER_NAME = var.arcade_secret_parameter_name
-      ARCADE_TABLE_NAME            = aws_dynamodb_table.arcade.name
-      GOOGLE_CLIENT_ID             = var.google_client_id
+      ARCADE_ALLOWED_ORIGINS = join(",", var.allowed_origins)
+      ARCADE_SECRET_ARN      = var.arcade_secret_arn
+      ARCADE_TABLE_NAME      = aws_dynamodb_table.arcade.name
+      GOOGLE_CLIENT_ID       = var.google_client_id
     }
   }
 

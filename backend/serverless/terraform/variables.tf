@@ -41,10 +41,14 @@ variable "allowed_origins" {
   ]
 }
 
-variable "arcade_secret_parameter_name" {
-  description = "Name of an existing SSM SecureString containing the token signing secret."
+variable "arcade_secret_arn" {
+  description = "ARN of an existing Secrets Manager secret containing the token signing secret."
   type        = string
-  default     = "/arcade/prod/token-signing-secret"
+
+  validation {
+    condition     = can(regex("^arn:[^:]+:secretsmanager:", var.arcade_secret_arn))
+    error_message = "arcade_secret_arn must be a Secrets Manager ARN."
+  }
 }
 
 variable "lambda_memory_size" {

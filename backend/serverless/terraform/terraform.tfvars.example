@@ -9,4 +9,4 @@ allowed_origins = [
   "https://www.jeremysdemers.com",
 ]
 
-arcade_secret_parameter_name = "/arcade/prod/token-signing-secret"
+arcade_secret_arn = "arn:aws:secretsmanager:us-east-1:123456789012:secret:arcade/prod/token-signing-secret-EXAMPLE"
