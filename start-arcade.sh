@@ -87,11 +87,11 @@ start_service() {
 
   (
     if [[ "$environment_scope" == backend ]]; then
-      export GOOGLE_CLIENT_ID ARCADE_SECRET
+      export GOOGLE_CLIENT_ID ARCADE_SECRET ARCADE_ALLOWED_ORIGINS
       unset NEXT_PUBLIC_GOOGLE_CLIENT_ID
     else
       export NEXT_PUBLIC_GOOGLE_CLIENT_ID="$GOOGLE_CLIENT_ID"
-      unset GOOGLE_CLIENT_ID ARCADE_SECRET
+      unset GOOGLE_CLIENT_ID ARCADE_SECRET ARCADE_ALLOWED_ORIGINS
     fi
 
     exec setsid bash -c '
