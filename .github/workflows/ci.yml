@@ -1,0 +1,63 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  frontend:
+    name: ${{ matrix.game }} frontend
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - game: Tetris
+            directory: tetris/frontend
+          - game: Neon Shatter
+            directory: neon-shatter/frontend
+    defaults:
+      run:
+        working-directory: ${{ matrix.directory }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: ${{ matrix.directory }}/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run build
+
+  serverless-api:
+    name: Serverless API
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+          cache: pip
+          cache-dependency-path: backend/serverless/requirements.txt
+      - uses: hashicorp/setup-terraform@v3
+
+      - name: Install API dependencies
+        run: python -m pip install -r backend/serverless/requirements.txt
+
+      - name: Run API tests
+        env:
+          PYTHONPATH: backend/serverless
+        run: python -m unittest discover -s backend/serverless/tests -v
+
+      - name: Build Lambda package
+        run: ./backend/serverless/build-lambda.sh
+
+      - name: Check Terraform
+        run: |
+          terraform -chdir=backend/serverless/terraform fmt -check
+          terraform -chdir=backend/serverless/terraform init -backend=false -input=false
+          terraform -chdir=backend/serverless/terraform validate
