@@ -15,3 +15,9 @@ venv/
 .agents/
 GOOGLE_AUTH_SETUP.md
 .clerk/
+backend/serverless/build/
+backend/serverless/dist/
+backend/serverless/terraform/.terraform/
+backend/serverless/terraform/*.tfstate
+backend/serverless/terraform/*.tfstate.*
+backend/serverless/terraform/*.tfplan

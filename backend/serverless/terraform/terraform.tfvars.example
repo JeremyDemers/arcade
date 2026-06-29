@@ -1,0 +1,12 @@
+aws_region   = "us-east-1"
+project_name = "arcade"
+environment  = "prod"
+
+google_client_id = "YOUR_CLIENT_ID.apps.googleusercontent.com"
+
+allowed_origins = [
+  "https://jeremysdemers.com",
+  "https://www.jeremysdemers.com",
+]
+
+arcade_secret_parameter_name = "/arcade/prod/token-signing-secret"

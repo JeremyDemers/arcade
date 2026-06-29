@@ -2,6 +2,8 @@
 
 A SaaS-style classic arcade collection. Each game lives in its own directory with a Next.js frontend and FastAPI backend.
 
+Production can use the shared serverless API in `backend/serverless`. It consolidates both games behind API Gateway and Lambda with DynamoDB persistence while preserving the SQLite services used by the local launcher.
+
 Authentication uses Google Identity Services directly. See `docs/google-auth-setup.md` before running either game.
 
 ## Games
@@ -61,5 +63,11 @@ virtual environments, and frontend build output are ignored by Git.
 See `tetris/README.md`, `neon-shatter/README.md`, and
 `docs/google-auth-setup.md` for manual setup, environment variables, controls,
 and production-domain configuration.
+
+-Author: Jeremy Demers
+
+## Serverless deployment
+
+See `backend/serverless/README.md` for the shared Lambda API, DynamoDB data model, Terraform configuration, secret setup, and deployment workflow.
 
 -Author: Jeremy Demers
