@@ -128,7 +128,6 @@ resource "aws_lambda_function" "api" {
   timeout          = 15
   source_code_hash = filebase64sha256("${path.module}/../dist/arcade-api.zip")
 
-  reserved_concurrent_executions = 5
 
   environment {
     variables = {
