@@ -599,6 +599,26 @@ h1 {
 
 .key-hints span { display: inline-flex; align-items: center; gap: 4px; }
 
+.touch-hints {
+  display: none;
+  flex-wrap: wrap;
+  gap: 8px 13px;
+  justify-content: center;
+  padding: 12px 4px 0;
+  color: var(--muted);
+  font-size: 0.65rem;
+  font-weight: 800;
+}
+
+.touch-hints span { display: inline-flex; align-items: center; gap: 5px; }
+
+.touch-hints strong {
+  color: var(--cyan);
+  font-size: 0.62rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
 kbd {
   display: inline-grid;
   min-width: 22px;
@@ -826,6 +846,20 @@ kbd {
   .board { gap: 3px; padding: 6px; }
   .board-wrap { padding: 6px; border-radius: 12px; }
   .key-hints { gap: 7px 10px; }
+}
+
+@media (hover: none), (pointer: coarse) {
+  .board.playing {
+    cursor: grab;
+    touch-action: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+  }
+
+  .board.playing:active { cursor: grabbing; }
+  .key-hints { display: none; }
+  .touch-hints { display: flex; }
 }
 
 @media (prefers-reduced-motion: reduce) {

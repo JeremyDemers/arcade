@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { PointerEvent as ReactPointerEvent } from "react";
 import Image from "next/image";
 import {
   Crown,
@@ -89,6 +90,24 @@ const CELL_CLASSES = [
 const LINE_POINTS = [0, 100, 300, 500, 800];
 
 type SoundName = "move" | "rotate" | "drop" | "lineClear";
+
+type BoardGesture = {
+  pointerId: number;
+  startX: number;
+  startY: number;
+  startedAt: number;
+  axis: "horizontal" | "vertical" | null;
+  horizontalSteps: number;
+  verticalSteps: number;
+  cellWidth: number;
+  cellHeight: number;
+};
+
+const GESTURE_START_THRESHOLD = 10;
+const TAP_DISTANCE_THRESHOLD = 12;
+const TAP_DURATION_THRESHOLD = 500;
+const DRAG_STEP_RATIO = 0.72;
+const HARD_DROP_ROW_THRESHOLD = 3;
 
 function emptyBoard(): Board {
   return Array.from({ length: HEIGHT }, () => Array<Cell>(WIDTH).fill(0));
@@ -235,6 +254,7 @@ export function TetrisGame() {
   const previousLinesRef = useRef(0);
   const soundsRef = useRef<Record<SoundName, HTMLAudioElement> | null>(null);
   const themeRef = useRef<HTMLAudioElement | null>(null);
+  const boardGestureRef = useRef<BoardGesture | null>(null);
 
   const playSound = useCallback(
     (name: SoundName) => {
@@ -429,6 +449,16 @@ export function TetrisGame() {
     setGame((current) => (current.status === "playing" ? moveDown(current) : current));
   }, []);
 
+  const dragDown = useCallback(() => {
+    setGame((current) => {
+      if (current.status !== "playing") return current;
+      const active = { ...current.active, y: current.active.y + 1 };
+      return collides(current.board, active)
+        ? current
+        : { ...current, active, score: current.score + 1 };
+    });
+  }, []);
+
   const hardDrop = useCallback(() => {
     setGame((current) => {
       if (current.status !== "playing") return current;
@@ -501,6 +531,91 @@ export function TetrisGame() {
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [hardDrop, hold, move, playSound, rotateActive, softDrop, togglePause]);
+
+  const beginBoardGesture = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
+    if (game.status !== "playing" || event.pointerType === "mouse" || !event.isPrimary) return;
+
+    event.preventDefault();
+    const bounds = event.currentTarget.getBoundingClientRect();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    boardGestureRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      startedAt: performance.now(),
+      axis: null,
+      horizontalSteps: 0,
+      verticalSteps: 0,
+      cellWidth: bounds.width / WIDTH,
+      cellHeight: bounds.height / HEIGHT,
+    };
+  }, [game.status]);
+
+  const continueBoardGesture = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
+    const gesture = boardGestureRef.current;
+    if (!gesture || gesture.pointerId !== event.pointerId) return;
+
+    event.preventDefault();
+    const deltaX = event.clientX - gesture.startX;
+    const deltaY = event.clientY - gesture.startY;
+    const distanceX = Math.abs(deltaX);
+    const distanceY = Math.abs(deltaY);
+
+    if (!gesture.axis) {
+      if (Math.max(distanceX, distanceY) < GESTURE_START_THRESHOLD) return;
+      if (distanceX > distanceY * 1.15) gesture.axis = "horizontal";
+      else if (deltaY > 0 && distanceY > distanceX * 1.15) gesture.axis = "vertical";
+      else return;
+    }
+
+    if (gesture.axis === "horizontal") {
+      const targetSteps = Math.trunc(deltaX / (gesture.cellWidth * DRAG_STEP_RATIO));
+      const stepDelta = targetSteps - gesture.horizontalSteps;
+      if (!stepDelta) return;
+
+      const direction = Math.sign(stepDelta);
+      for (let step = 0; step < Math.abs(stepDelta); step += 1) move(direction);
+      gesture.horizontalSteps = targetSteps;
+      playSound("move");
+      return;
+    }
+
+    const targetSteps = Math.max(0, Math.trunc(deltaY / (gesture.cellHeight * DRAG_STEP_RATIO)));
+    const stepDelta = targetSteps - gesture.verticalSteps;
+    if (stepDelta <= 0) return;
+
+    for (let step = 0; step < stepDelta; step += 1) dragDown();
+    gesture.verticalSteps = targetSteps;
+    playSound("drop");
+  }, [dragDown, move, playSound]);
+
+  const endBoardGesture = useCallback((event: ReactPointerEvent<HTMLDivElement>, cancelled = false) => {
+    const gesture = boardGestureRef.current;
+    if (!gesture || gesture.pointerId !== event.pointerId) return;
+
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    boardGestureRef.current = null;
+    if (cancelled) return;
+
+    event.preventDefault();
+    const deltaX = event.clientX - gesture.startX;
+    const deltaY = event.clientY - gesture.startY;
+    const distance = Math.hypot(deltaX, deltaY);
+    const duration = performance.now() - gesture.startedAt;
+
+    if (!gesture.axis && distance <= TAP_DISTANCE_THRESHOLD && duration <= TAP_DURATION_THRESHOLD) {
+      rotateActive();
+      playSound("rotate");
+      return;
+    }
+
+    if (gesture.axis === "vertical" && gesture.verticalSteps >= HARD_DROP_ROW_THRESHOLD) {
+      hardDrop();
+      playSound("drop");
+    }
+  }, [hardDrop, playSound, rotateActive]);
 
   function clearLocalSession() {
     window.localStorage.removeItem(STORAGE_KEY);
@@ -614,7 +729,14 @@ export function TetrisGame() {
             <span>Level {String(game.level).padStart(2, "0")}</span>
           </div>
           <div className="board-wrap">
-            <div className={`board ${game.status}`}>
+            <div
+              className={`board ${game.status}`}
+              onPointerDown={beginBoardGesture}
+              onPointerMove={continueBoardGesture}
+              onPointerUp={endBoardGesture}
+              onPointerCancel={(event) => endBoardGesture(event, true)}
+              aria-describedby="touch-control-hints"
+            >
               {game.board.flatMap((row, y) =>
                 row.map((value, x) => {
                   const activeCell = visible.get(`${x}:${y}`);
@@ -640,6 +762,11 @@ export function TetrisGame() {
             <span><kbd>↑</kbd> Rotate</span>
             <span><kbd>Space</kbd> Drop</span>
             <span><kbd>C</kbd> Hold</span>
+          </div>
+          <div className="touch-hints" id="touch-control-hints" aria-label="Touch controls">
+            <span><strong>Tap</strong> Rotate</span>
+            <span><strong>Drag</strong> Move</span>
+            <span><strong>Swipe ↓</strong> Drop</span>
           </div>
         </section>
 
