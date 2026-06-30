@@ -67,3 +67,7 @@ export ARCADE_TERRAFORM_STATE_BUCKET="YOUR_STATE_BUCKET"
 ```
 
 The script intentionally does not use `-auto-approve`. After deployment, use the `api_url` output for both portfolio game API variables.
+
+## Continuous deployment
+
+After CI passes on `main`, GitHub Actions builds the Lambda package, assumes the repository's AWS role through OIDC, updates only `arcade-prod-api`, and verifies `/health`. The role trusts only `JeremyDemers/arcade` on `main` and cannot change Terraform infrastructure.
